@@ -3,13 +3,14 @@
   "outputDirectory": "frontend/dist",
   "functions": {
     "api/index.py": {
-      "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "backend/app/models/**",
+      "excludeFiles": "{frontend/**,data/**,notebooks/**,tests/**,create_notebook.py}"
     }
   },
   "rewrites": [
     {
-      "source": "/api/:path*",
+      "source": "/api/(.*)",
       "destination": "/api/index.py"
     },
     {

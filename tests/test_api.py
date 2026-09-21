@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
 from backend.app.services.recommender import engine
+from api.index import app as vercel_app
 
 @pytest.fixture(scope="module")
 def client():
@@ -10,12 +11,52 @@ def client():
     with TestClient(app) as c:
         yield c
 
+@pytest.fixture(scope="module")
+def vercel_client():
+    engine.load_artifacts()
+    with TestClient(vercel_app) as c:
+        yield c
+
 def test_api_health(client):
     res = client.get("/api/health")
     assert res.status_code == 200
     data = res.json()
     assert data["status"] == "healthy"
     assert data["model_artifacts_loaded"] is True
+
+def test_root_health_fallback(client):
+    """Verify endpoint resolves even without /api prefix."""
+    res = client.get("/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "healthy"
+
+def test_cors_vercel_origin(client):
+    """Verify CORS headers allow .vercel.app origins."""
+    headers = {
+        "Origin": "https://movie-recommendation-demo.vercel.app",
+        "Access-Control-Request-Method": "GET",
+    }
+    res = client.options("/api/health", headers=headers)
+    assert res.status_code == 200
+    assert res.headers.get("access-control-allow-origin") == "https://movie-recommendation-demo.vercel.app"
+
+def test_vercel_serverless_path_rewrites(vercel_client):
+    """Verify VercelServerlessApp normalizer handles internal rewrite paths."""
+    # 1. Rewritten to /api/index.py with x-forwarded-uri
+    res = vercel_client.get("/api/index.py", headers={"x-forwarded-uri": "/api/health"})
+    assert res.status_code == 200
+    assert res.json()["status"] == "healthy"
+
+    # 2. Rewritten to /api/index.py with x-matched-path
+    res = vercel_client.get("/api/index.py", headers={"x-matched-path": "/api/health"})
+    assert res.status_code == 200
+    assert res.json()["status"] == "healthy"
+
+    # 3. Rewritten subpath /api/index.py/api/health
+    res = vercel_client.get("/api/index.py/api/health")
+    assert res.status_code == 200
+    assert res.json()["status"] == "healthy"
 
 def test_api_movies_search(client):
     res = client.get("/api/movies/search?q=dark+knight")

@@ -26,13 +26,14 @@ app = FastAPI(
     version=settings.VERSION,
     description="Production Hybrid Movie Recommendation Engine combining TF-IDF Content Filtering, Centered Cosine Collaborative Filtering, RapidFuzz Title Aliasing, and Bayesian Weighted Ranking.",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
-# CORS Middleware
+# CORS Middleware - permits localhost and Vercel domains (*.vercel.app)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|.*\.vercel\.app)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,13 +48,20 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "An internal server error occurred. Please try again or check server logs."},
     )
 
-# Routers
+# Routers - mounted under /api as primary endpoints
 app.include_router(health_router, prefix="/api")
 app.include_router(movies_router, prefix="/api")
 app.include_router(recs_router, prefix="/api")
 app.include_router(insights_router, prefix="/api")
 
+# Routers - also mounted at root for proxies/rewrites that strip the /api prefix
+app.include_router(health_router)
+app.include_router(movies_router)
+app.include_router(recs_router)
+app.include_router(insights_router)
+
 @app.get("/")
+@app.get("/api")
 def root():
     return {
         "message": f"Welcome to {settings.PROJECT_NAME} API",
