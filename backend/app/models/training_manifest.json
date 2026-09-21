@@ -1,0 +1,15 @@
+{
+  "build_timestamp": "2026-09-21T06:13:43.973784Z",
+  "movies_csv_md5": "b252328d16b085936b56eefad880ef9d",
+  "ratings_csv_md5": "325a6f09399d1c45671f187505e1a100",
+  "movies_count": 9742,
+  "ratings_count": 100836,
+  "config": {
+    "MIN_COMMON_RATINGS": 20,
+    "SHRINKAGE_LAMBDA": 25.0,
+    "TOP_K_NEIGHBOURS": 200,
+    "POPULARITY_PRIOR_M": 50.0,
+    "NEUTRAL_BASELINE": 3.0
+  },
+  "training_time_seconds": 34.12
+}

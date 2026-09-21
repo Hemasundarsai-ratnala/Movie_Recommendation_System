@@ -1,0 +1,62 @@
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from backend.app.config import settings
+from backend.app.logging_config import logger
+from backend.app.services.recommender import engine
+
+from backend.app.api.health import router as health_router
+from backend.app.api.movies import router as movies_router
+from backend.app.api.recommendations import router as recs_router
+from backend.app.api.insights import router as insights_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Initializing Hybrid Movie Recommendation System backend...")
+    success = engine.load_artifacts()
+    if not success:
+        logger.warning("Artifact loading failed at startup. Run `python backend/scripts/train.py` to generate model files.")
+    yield
+    logger.info("Shutting down backend...")
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="Production Hybrid Movie Recommendation Engine combining TF-IDF Content Filtering, Centered Cosine Collaborative Filtering, RapidFuzz Title Aliasing, and Bayesian Weighted Ranking.",
+    lifespan=lifespan,
+)
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Exception handlers preventing traceback leakage
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled server exception on {request.url.path}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred. Please try again or check server logs."},
+    )
+
+# Routers
+app.include_router(health_router, prefix="/api")
+app.include_router(movies_router, prefix="/api")
+app.include_router(recs_router, prefix="/api")
+app.include_router(insights_router, prefix="/api")
+
+@app.get("/")
+def root():
+    return {
+        "message": f"Welcome to {settings.PROJECT_NAME} API",
+        "docs_url": "/docs",
+        "health_check": "/api/health",
+    }
