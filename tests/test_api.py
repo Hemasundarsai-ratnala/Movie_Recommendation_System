@@ -41,6 +41,16 @@ def test_cors_vercel_origin(client):
     assert res.status_code == 200
     assert res.headers.get("access-control-allow-origin") == "https://movie-recommendation-demo.vercel.app"
 
+def test_cors_render_origin(client):
+    """Verify CORS headers allow .onrender.com origins."""
+    headers = {
+        "Origin": "https://movie-recommendation-system-i8o4.onrender.com",
+        "Access-Control-Request-Method": "GET",
+    }
+    res = client.options("/api/health", headers=headers)
+    assert res.status_code == 200
+    assert res.headers.get("access-control-allow-origin") == "https://movie-recommendation-system-i8o4.onrender.com"
+
 def test_vercel_serverless_path_rewrites(vercel_client):
     """Verify VercelServerlessApp normalizer handles internal rewrite paths."""
     # 1. Rewritten to /api/index.py with x-forwarded-uri
