@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd frontend && npm install && npm run build",
+    "build": "npm --prefix frontend install && npm --prefix frontend run build && node -e \"const fs=require('fs'); if(fs.existsSync('frontend/dist')){ fs.cpSync('frontend/dist', 'dist', {recursive: true, force: true}); }\"",
     "dev": "python run.py"
   }
 }
