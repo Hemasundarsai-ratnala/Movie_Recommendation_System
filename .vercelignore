@@ -3,7 +3,6 @@ data/
 notebooks/
 tests/
 .pytest_cache/
-create_notebook.py
 docker-compose.yml
 *.ipynb
 .venv/

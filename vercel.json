@@ -5,7 +5,7 @@
     "api/index.py": {
       "maxDuration": 30,
       "includeFiles": "backend/app/models/**",
-      "excludeFiles": "{frontend/**,data/**,notebooks/**,tests/**,create_notebook.py}"
+      "excludeFiles": "{frontend/**,data/**,notebooks/**,tests/**}"
     }
   },
   "rewrites": [
