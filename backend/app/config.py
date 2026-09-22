@@ -1,8 +1,12 @@
+import sys
 import os
 from pathlib import Path
 from pydantic import BaseModel
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 def _get_env_str(key: str, default: str) -> str:
     val = os.getenv(key)
     return val.strip() if val is not None and val.strip() != "" else default
@@ -40,7 +44,7 @@ class Settings(BaseModel):
     
     # Server & Security
     BACKEND_HOST: str = _get_env_str("BACKEND_HOST", "0.0.0.0")
-    BACKEND_PORT: int = _get_env_int("BACKEND_PORT", 8000)
+    BACKEND_PORT: int = _get_env_int("PORT", _get_env_int("BACKEND_PORT", 8000))
     CORS_ORIGINS: list[str] = [
         origin.strip()
         for origin in _get_env_str(
