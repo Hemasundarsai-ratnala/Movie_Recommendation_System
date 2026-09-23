@@ -1,4 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const RENDER_BACKEND_URL = 'https://movie-recommendation-system-i8o4.onrender.com';
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.PROD ? RENDER_BACKEND_URL : '')
+).replace(/\/+$/, '');
 
 async function fetchJson(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;

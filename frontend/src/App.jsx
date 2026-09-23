@@ -35,23 +35,41 @@ export default function App() {
     diversityLambda: 0.7,
   });
 
-  // Check health and load insights at startup
+  // Check health and load insights at startup with graceful retries for Render cold start
   useEffect(() => {
-    async function init() {
+    let isMounted = true;
+
+    async function init(retriesLeft = 3, delayMs = 2000) {
       try {
         const health = await api.getHealth();
-        setIsEngineLoaded(health.model_artifacts_loaded);
+        if (!isMounted) return;
+        setIsEngineLoaded(Boolean(health.model_artifacts_loaded));
         
         setIsLoadingInsights(true);
         const data = await api.getInsights();
+        if (!isMounted) return;
         setInsights(data);
       } catch (err) {
-        console.error('Initialization check error:', err);
+        if (!isMounted) return;
+        if (retriesLeft > 0) {
+          console.warn(`Backend initializing (cold start). Retrying in ${delayMs}ms... (${retriesLeft} retries left)`);
+          setTimeout(() => {
+            if (isMounted) init(retriesLeft - 1, delayMs * 1.5);
+          }, delayMs);
+        } else {
+          console.error('Initialization check error:', err);
+        }
       } finally {
-        setIsLoadingInsights(false);
+        if (isMounted) {
+          setIsLoadingInsights(false);
+        }
       }
     }
     init();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSelectSingleMovie = async (movie) => {
